@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>octra stats | devnet</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:40px 16px;font-size:12px;letter-spacing:0.5px}
+.wrap{width:100%;max-width:860px;background:#fff;border:1px solid #D0D7E2;overflow:hidden}
+.hdr{padding:14px 20px;border-bottom:1px solid #E5E9EF;display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:14px;font-weight:600;color:#2B3A52}
+.hdr .net-badge{font-size:11px;color:#8C9DB6;font-family:monospace}
+.stats-row{display:flex;border-bottom:1px solid #D0D7E2}
+.stat-box{flex:1;background:#E5E9EF;border-right:1px solid #D0D7E2;padding:8px 14px}
+.stat-box:last-child{border-right:none}
+.stat-box .lbl{font-size:11px;color:#8C9DB6;text-transform:lowercase;letter-spacing:0.5px}
+.stat-box .val{font-size:13px;font-weight:bold;color:#3B567F;margin-top:2px;font-family:monospace}
+.section-bar{display:flex;background:#D0D7E2;border-top:1px solid #C0C6D0;border-bottom:1px solid #C0C6D0}
+.section-bar button{padding:8px 20px;font-size:11px;font-weight:bold;border:none;background:transparent;cursor:pointer;color:#8C9DB6;letter-spacing:0.5px;text-transform:lowercase;font-family:Tahoma,arial,sans-serif}
+.section-bar button.active{color:#3B567F;background:#C0C6D0}
+.section-bar button:hover:not(.active){color:#3B567F}
+.tf-bar{display:flex;border-bottom:1px solid #E5E9EF;background:#F7F8FA}
+.tf-bar button{flex:1;padding:4px 0;font-size:11px;font-weight:500;border:none;background:transparent;cursor:pointer;color:#8C9DB6;border-bottom:2px solid transparent;transition:all 0.12s;font-family:Tahoma,arial,sans-serif;letter-spacing:0.5px}
+.tf-bar button.active{color:#3B567F;border-bottom-color:#3B567F;background:#fff}
+.tf-bar button:hover:not(.active){background:#E5E9EF;color:#3B567F}
+.chart-wrap{position:relative;padding:16px 20px 12px;min-height:240px}
+.chart-status{padding:40px 20px;text-align:center;font-size:12px;color:#8C9DB6;display:none}
+.chart-status.show{display:block}
+.chart-tooltip{position:absolute;background:#2B3A52;color:#fff;font-size:11px;padding:6px 10px;pointer-events:none;display:none;font-family:Tahoma,arial,sans-serif;letter-spacing:0.3px;line-height:1.6;white-space:nowrap;z-index:10}
+.footer-bar{padding:6px 20px;background:#D0D7E2;border-top:1px solid #C0C6D0;font-size:11px;color:#8C9DB6;display:flex;justify-content:space-between}
+@media(max-width:600px){body{padding:0;align-items:stretch}.wrap{border:none;min-height:100vh}.stats-row{flex-wrap:wrap}.stat-box{flex:1 1 50%;border-bottom:1px solid #D0D7E2}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <h1>octra stats</h1>
+    <span class="net-badge">devnet</span>
+  </div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="lbl">total transactions</div><div class="val" id="st-txs">...</div></div>
+    <div class="stat-box"><div class="lbl">total accounts</div><div class="val" id="st-accounts">...</div></div>
+    <div class="stat-box"><div class="lbl">circulating supply</div><div class="val" id="st-supply">...</div></div>
+    <div class="stat-box"><div class="lbl">current epoch</div><div class="val" id="st-epoch">...</div></div>
+  </div>
+  <div class="section-bar">
+    <button id="sec-txs"   onclick="setSection('txs')"   class="active">transactions</button>
+    <button id="sec-users" onclick="setSection('users')">users</button>
+  </div>
+  <div class="tf-bar">
+    <button id="tf-MONTH" onclick="setTf('MONTH')">month</button>
+    <button id="tf-WEEK"  onclick="setTf('WEEK')">week</button>
+    <button id="tf-DAY"   onclick="setTf('DAY')" class="active">day</button>
+  </div>
+  <div class="chart-wrap" id="chart-wrap">
+    <div class="chart-status show" id="chart-status">loading...</div>
+    <canvas id="chart" style="display:none"></canvas>
+    <div class="chart-tooltip" id="chart-tooltip"></div>
+  </div>
+  <div class="footer-bar">
+    <span>octra-data.devnet · bigquery</span>
+    <span id="last-updated"></span>
+  </div>
+</div>
+<script>
+const STATS_URL = 'https://storage.googleapis.com/octra-data/devnet/stats.json';
+
+let cachedPayload  = null;
+let activeSection  = 'txs';
+let activeTf       = 'DAY';
+
+async function loadPayload() {
+  if (cachedPayload) return cachedPayload;
+  const res = await fetch(STATS_URL);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  cachedPayload = await res.json();
+  return cachedPayload;
+}
+
+function parseRows(tf) {
+  if (!cachedPayload) return [];
+  const src = activeSection === 'users' ? cachedPayload.user_charts : cachedPayload.charts;
+  if (!src) return [];
+  return src[tf] || [];
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+
+const canvas  = document.getElementById('chart');
+const ctx     = canvas.getContext('2d');
+const tooltip = document.getElementById('chart-tooltip');
+const wrap    = document.getElementById('chart-wrap');
+
+let chartData   = [];
+let barRects    = [];
+let hoveredIdx  = -1;
+
+function drawChart(data) {
+  const dpr  = window.devicePixelRatio || 1;
+  const W    = wrap.clientWidth - 40;
+  const H    = 220;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  canvas.width  = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const PL = 54, PR = 12, PT = 14, PB = 42;
+  const cW = W - PL - PR;
+  const cH = H - PT - PB;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (!data.length) {
+    ctx.fillStyle = '#8C9DB6';
+    ctx.font = '11px Tahoma,arial,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('no data for this timeframe', W / 2, H / 2);
+    barRects = [];
+    return;
+  }
+
+  const maxVal = Math.max(...data.map(d => d.count), 1);
+  const rawStep = maxVal / 4;
+  const mag     = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const yStep   = Math.ceil(rawStep / mag) * mag || 1;
+  const yMax    = yStep * 4;
+
+  ctx.strokeStyle = '#E5E9EF';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#8C9DB6';
+  ctx.font = '10px Tahoma,arial,sans-serif';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const v = yStep * i;
+    const y = PT + cH - (v / yMax) * cH;
+    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(PL + cW, y); ctx.stroke();
+    ctx.fillText(fmtNum(v), PL - 6, y + 3);
+  }
+
+  const n    = data.length;
+  const gap  = Math.max(1, Math.round(cW / n * 0.12));
+  const barW = Math.max(1, (cW - gap * (n - 1)) / n);
+  barRects   = [];
+
+  data.forEach((d, i) => {
+    const bx = PL + i * (barW + gap);
+    const bh = Math.max(d.count > 0 ? 1 : 0, (d.count / yMax) * cH);
+    const by = PT + cH - bh;
+    ctx.fillStyle = (i === hoveredIdx) ? '#516E9A' : '#3B567F';
+    ctx.fillRect(Math.round(bx), Math.round(by), Math.round(barW), Math.round(bh));
+    barRects.push({x: bx, w: barW + gap, idx: i});
+  });
+
+  ctx.fillStyle = '#8C9DB6';
+  ctx.font = '10px Tahoma,arial,sans-serif';
+  ctx.textAlign = 'center';
+  data.forEach((d, i) => {
+    const m = d.bucket.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const isWeekStart = !m || new Date(+m[1], +m[2] - 1, +m[3]).getDay() === 0;
+    if (!isWeekStart) return;
+    const cx = PL + i * (barW + gap) + barW / 2;
+    ctx.fillText(d.bucket, cx, H - PB + 14);
+  });
+}
+
+canvas.addEventListener('mousemove', function(e) {
+  const cr  = canvas.getBoundingClientRect();
+  const wr  = wrap.getBoundingClientRect();
+  const mx  = e.clientX - cr.left;
+  let found = -1;
+  for (const r of barRects) {
+    if (mx >= r.x && mx < r.x + r.w) { found = r.idx; break; }
+  }
+  if (found !== hoveredIdx) {
+    hoveredIdx = found;
+    drawChart(chartData);
+  }
+  if (found >= 0) {
+    const d = chartData[found];
+    const body = activeSection === 'users'
+      ? 'users: ' + d.count.toLocaleString()
+      : 'txs: ' + d.count.toLocaleString() + '<br>vol: ' + d.volume.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT';
+    tooltip.innerHTML = '<b>' + d.bucket + '</b><br>' + body;
+    const tx = Math.min(e.clientX - wr.left + 14, wr.width - 165);
+    const ty = Math.max(e.clientY - wr.top  - 14, 4);
+    tooltip.style.left    = tx + 'px';
+    tooltip.style.top     = ty + 'px';
+    tooltip.style.display = 'block';
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('mouseleave', function() {
+  hoveredIdx = -1;
+  tooltip.style.display = 'none';
+  if (chartData.length) drawChart(chartData);
+});
+
+window.addEventListener('resize', function() {
+  if (chartData.length) drawChart(chartData);
+});
+
+function setStatus(msg) {
+  document.getElementById('chart-status').className = 'chart-status show';
+  document.getElementById('chart-status').textContent = msg;
+  canvas.style.display = 'none';
+}
+
+function showCanvas() {
+  document.getElementById('chart-status').className = 'chart-status';
+  canvas.style.display = 'block';
+}
+
+async function setSection(sec) {
+  activeSection = sec;
+  document.querySelectorAll('.section-bar button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + sec).classList.add('active');
+  await setTf(activeTf);
+}
+
+async function setTf(tf) {
+  activeTf = tf;
+  document.querySelectorAll('.tf-bar button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tf-' + tf).classList.add('active');
+  setStatus('loading...');
+  try {
+    await loadPayload();
+    chartData = parseRows(tf);
+    showCanvas();
+    drawChart(chartData);
+    const gen = cachedPayload.generated_at ? new Date(cachedPayload.generated_at).toLocaleTimeString() : '';
+    document.getElementById('last-updated').textContent = gen ? 'generated ' + gen : '';
+  } catch (e) {
+    console.error('[stats] error loading', activeSection, tf, e);
+    setStatus('error: ' + e.message);
+  }
+}
+
+async function loadStats() {
+  try {
+    const p = await loadPayload();
+    const s = p.stats || {};
+    document.getElementById('st-txs').textContent      = (s.total_transactions || 0).toLocaleString();
+    document.getElementById('st-accounts').textContent = (s.total_accounts     || 0).toLocaleString();
+    document.getElementById('st-supply').textContent   = (s.supply             || 0).toLocaleString() + ' OCT';
+    document.getElementById('st-epoch').textContent    = (s.epoch_id           || 0).toLocaleString();
+  } catch (_) {
+    ['st-txs', 'st-accounts', 'st-supply', 'st-epoch'].forEach(function(id) {
+      document.getElementById(id).textContent = '\u2014';
+    });
+  }
+}
+
+loadStats();
+setTf('DAY');
+</script>
+</body>
+</html>
