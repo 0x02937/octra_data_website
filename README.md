@@ -99,6 +99,7 @@ Periodic snapshots of global chain state, written once every 500 epochs.
 | `total_transactions` | INT64 | Cumulative confirmed transactions |
 | `staging_size` | INT64 | Pending transactions in mempool |
 | `recent_tx_count` | INT64 | Transactions in recent epochs |
+| `total_fees_collected` | FLOAT64 | Cumulative fees collected in OCT (from `node_metrics`) |
 | `ingested_at` | TIMESTAMP | When this row was written |
 
 Partitioned by `DATE(snapshot_at)`.

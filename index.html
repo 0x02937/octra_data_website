@@ -43,6 +43,7 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
     <div class="stat-box"><div class="lbl">total accounts</div><div class="val" id="st-accounts">...</div></div>
     <div class="stat-box"><div class="lbl">circulating supply</div><div class="val" id="st-supply">...</div></div>
     <div class="stat-box"><div class="lbl">current epoch</div><div class="val" id="st-epoch">...</div></div>
+    <div class="stat-box"><div class="lbl">total revenue</div><div class="val" id="st-revenue">...</div></div>
   </div>
   <div class="section-bar">
     <button id="sec-txs"     onclick="setSection('txs')"     class="active">transactions</button>
@@ -159,12 +160,12 @@ function drawChart(data) {
                    : 0;
     const fbh      = frontVal > 0 ? Math.max(1, (frontVal / yMax) * cH) : 0;
 
-    ctx.fillStyle = (i === hoveredIdx) ? '#516E9A' : '#3B567F';
+    ctx.fillStyle = (i === hoveredIdx) ? '#C0C6D0' : '#8C9DB6';
     ctx.fillRect(Math.round(bx), Math.round(by), Math.round(barW), Math.round(bh));
 
     if (fbh > 0) {
       const fby = PT + cH - fbh;
-      ctx.fillStyle = (i === hoveredIdx) ? '#444' : '#1a1a1a';
+      ctx.fillStyle = (i === hoveredIdx) ? '#516E9A' : '#3B567F';
       ctx.fillRect(Math.round(bx), Math.round(fby), Math.round(barW), Math.round(fbh));
     }
 
@@ -271,8 +272,11 @@ async function loadStats() {
     document.getElementById('st-accounts').textContent = (s.total_accounts     || 0).toLocaleString();
     document.getElementById('st-supply').textContent   = (s.supply             || 0).toLocaleString() + ' OCT';
     document.getElementById('st-epoch').textContent    = (s.epoch_id           || 0).toLocaleString();
+    const revCharts = p.revenue_charts && p.revenue_charts.DAY;
+    const totalRev  = revCharts ? revCharts.reduce((a, d) => a + d.count, 0) : 0;
+    document.getElementById('st-revenue').textContent  = totalRev.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT';
   } catch (_) {
-    ['st-txs', 'st-accounts', 'st-supply', 'st-epoch'].forEach(function(id) {
+    ['st-txs', 'st-accounts', 'st-supply', 'st-epoch', 'st-revenue'].forEach(function(id) {
       document.getElementById(id).textContent = '\u2014';
     });
   }
