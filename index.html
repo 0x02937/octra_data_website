@@ -35,6 +35,7 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
 .legend-item .swatch{width:10px;height:10px;flex-shrink:0}
 .legend-item.off .swatch{opacity:0.25}
 .legend-item.off span{color:#B0BAC8}
+.leg-num{color:#8C9DB6;font-family:monospace;margin-left:5px;font-size:11px;position:relative;top:1px}
 .footer-bar{padding:6px 20px;background:#D0D7E2;border-top:1px solid #C0C6D0;font-size:11px;color:#8C9DB6;display:flex;justify-content:space-between}
 @media(max-width:600px){body{padding:0;align-items:stretch}.wrap{border:none;min-height:100vh}.stats-row{flex-wrap:wrap}.stat-box{flex:1 1 50%;border-bottom:1px solid #D0D7E2}}
 </style>
@@ -70,21 +71,21 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
   <div class="legend-bar" id="legend-bar">
     <div id="leg-set-txs">
       <div class="legend-item" id="leg-all" onclick="toggleLegend('all')">
-        <div class="swatch" style="background:#8C9DB6"></div><span>all transactions</span>
+        <div class="swatch" style="background:#8C9DB6"></div><span>all transactions</span><span class="leg-num" id="leg-num-all"></span>
       </div>
       <div class="legend-item" id="leg-enc" onclick="toggleLegend('enc')">
-        <div class="swatch" style="background:#3B567F"></div><span>encrypted</span>
+        <div class="swatch" style="background:#3B567F"></div><span>encrypted</span><span class="leg-num" id="leg-num-enc"></span>
       </div>
       <div class="legend-item" id="leg-rej" onclick="toggleLegend('rej')">
-        <div class="swatch" style="background:#111"></div><span>rejected</span>
+        <div class="swatch" style="background:#111"></div><span>rejected</span><span class="leg-num" id="leg-num-rej"></span>
       </div>
     </div>
     <div id="leg-set-users" style="display:none">
       <div class="legend-item" id="leg-uniq" onclick="toggleLegend('uniq')">
-        <div class="swatch" style="background:#8C9DB6"></div><span>unique users</span>
+        <div class="swatch" style="background:#8C9DB6"></div><span>unique users</span><span class="leg-num" id="leg-num-uniq"></span>
       </div>
       <div class="legend-item" id="leg-new" onclick="toggleLegend('new')">
-        <div class="swatch" style="background:#3B567F"></div><span>new users</span>
+        <div class="swatch" style="background:#3B567F"></div><span>new users</span><span class="leg-num" id="leg-num-new"></span>
       </div>
     </div>
   </div>
@@ -131,6 +132,31 @@ let chartData   = [];
 let barRects    = [];
 let hoveredIdx  = -1;
 const vis = {all: true, enc: true, rej: true, uniq: true, new: true};
+
+function updateLegendCounts(data) {
+  const ids = ['all','enc','rej','uniq','new'];
+  if (!data || !data.length) {
+    ids.forEach(k => { document.getElementById('leg-num-' + k).textContent = ''; });
+    return;
+  }
+  const total = data.reduce((a, d) => a + (d.count           || 0), 0);
+  const enc   = data.reduce((a, d) => a + (d.encrypted_count || 0), 0);
+  const rej   = data.reduce((a, d) => a + (d.rejected_count  || 0), 0);
+  const neu   = data.reduce((a, d) => a + (d.new_user_count  || 0), 0);
+  if (activeSection === 'txs') {
+    document.getElementById('leg-num-all').textContent  = total.toLocaleString();
+    document.getElementById('leg-num-enc').textContent  = enc.toLocaleString();
+    document.getElementById('leg-num-rej').textContent  = rej.toLocaleString();
+    document.getElementById('leg-num-uniq').textContent = '';
+    document.getElementById('leg-num-new').textContent  = '';
+  } else if (activeSection === 'users') {
+    document.getElementById('leg-num-all').textContent  = '';
+    document.getElementById('leg-num-enc').textContent  = '';
+    document.getElementById('leg-num-rej').textContent  = '';
+    document.getElementById('leg-num-uniq').textContent = total.toLocaleString();
+    document.getElementById('leg-num-new').textContent  = neu.toLocaleString();
+  }
+}
 
 function toggleLegend(key) {
   vis[key] = !vis[key];
@@ -313,6 +339,7 @@ async function setTf(tf) {
     chartData = parseRows(tf);
     showCanvas();
     drawChart(chartData);
+    updateLegendCounts(chartData);
     const gen = cachedPayload.generated_at ? new Date(cachedPayload.generated_at).toLocaleTimeString() : '';
     document.getElementById('last-updated').textContent = gen ? 'generated ' + gen : '';
   } catch (e) {
