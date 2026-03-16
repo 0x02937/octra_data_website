@@ -17,7 +17,7 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
 .stat-box .lbl{font-size:11px;color:#8C9DB6;text-transform:lowercase;letter-spacing:0.5px}
 .stat-box .val{font-size:13px;font-weight:bold;color:#3B567F;margin-top:2px;font-family:monospace}
 .section-bar{display:flex;background:#D0D7E2;border-top:1px solid #C0C6D0;border-bottom:1px solid #C0C6D0}
-.section-bar button{padding:8px 20px;font-size:11px;font-weight:bold;border:none;background:transparent;cursor:pointer;color:#8C9DB6;letter-spacing:0.5px;text-transform:lowercase;font-family:Tahoma,arial,sans-serif}
+.section-bar button{flex:1;padding:8px 20px;font-size:11px;font-weight:bold;border:none;background:transparent;cursor:pointer;color:#8C9DB6;letter-spacing:0.5px;text-transform:lowercase;font-family:Tahoma,arial,sans-serif;text-align:center}
 .section-bar button.active{color:#3B567F;background:#C0C6D0}
 .section-bar button:hover:not(.active){color:#3B567F}
 .tf-bar{display:flex;border-bottom:1px solid #E5E9EF;background:#F7F8FA}
@@ -55,7 +55,7 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
   </div>
   <div class="section-bar">
     <button id="sec-txs"     onclick="setSection('txs')"     class="active">transactions</button>
-    <button id="sec-users"   onclick="setSection('users')">users</button>
+    <button id="sec-users"   onclick="setSection('users')">accounts</button>
     <button id="sec-revenue" onclick="setSection('revenue')">network revenue</button>
   </div>
   <div class="tf-bar">
@@ -82,10 +82,10 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
     </div>
     <div id="leg-set-users" style="display:none">
       <div class="legend-item" id="leg-uniq" onclick="toggleLegend('uniq')">
-        <div class="swatch" style="background:#8C9DB6"></div><span>unique users</span><span class="leg-num" id="leg-num-uniq"></span>
+        <div class="swatch" style="background:#8C9DB6"></div><span>unique accounts</span><span class="leg-num" id="leg-num-uniq"></span>
       </div>
       <div class="legend-item" id="leg-new" onclick="toggleLegend('new')">
-        <div class="swatch" style="background:#3B567F"></div><span>new users</span><span class="leg-num" id="leg-num-new"></span>
+        <div class="swatch" style="background:#3B567F"></div><span>new accounts</span><span class="leg-num" id="leg-num-new"></span>
       </div>
     </div>
   </div>
@@ -153,8 +153,8 @@ function updateLegendCounts(data) {
     document.getElementById('leg-num-all').textContent  = '';
     document.getElementById('leg-num-enc').textContent  = '';
     document.getElementById('leg-num-rej').textContent  = '';
-    document.getElementById('leg-num-uniq').textContent = total.toLocaleString();
-    document.getElementById('leg-num-new').textContent  = neu.toLocaleString();
+    document.getElementById('leg-num-uniq').textContent = neu.toLocaleString();
+    document.getElementById('leg-num-new').textContent  = 'time-based';
   }
 }
 
@@ -280,7 +280,7 @@ canvas.addEventListener('mousemove', function(e) {
     const rej  = d.rejected_count || 0;
     const rejenc = d.rejected_encrypted_count || 0;
     const body = activeSection === 'users'
-      ? 'unique users: ' + d.count.toLocaleString() + (neu > 0 ? '<br>new users: ' + neu.toLocaleString() : '')
+      ? 'unique accounts: ' + d.count.toLocaleString() + (neu > 0 ? '<br>new accounts: ' + neu.toLocaleString() : '')
       : activeSection === 'revenue'
       ? 'revenue: ' + d.count.toLocaleString(undefined, {maximumFractionDigits: 6}) + ' OCT<br>txs: ' + (d.tx_count || 0).toLocaleString()
       : 'all txs: ' + d.count.toLocaleString() + '<br>vol: ' + d.volume.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT'
