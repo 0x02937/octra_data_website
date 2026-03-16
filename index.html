@@ -28,6 +28,13 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
 .chart-status{padding:40px 20px;text-align:center;font-size:12px;color:#8C9DB6;display:none}
 .chart-status.show{display:block}
 .chart-tooltip{position:absolute;background:#2B3A52;color:#fff;font-size:11px;padding:6px 10px;pointer-events:none;display:none;font-family:Tahoma,arial,sans-serif;letter-spacing:0.3px;line-height:1.6;white-space:nowrap;z-index:10}
+.legend-bar{display:none;padding:6px 20px 10px;background:#fff;border-top:1px solid #E5E9EF}
+.legend-bar>div{display:flex;gap:16px}
+.legend-bar.show{display:flex}
+.legend-item{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;font-size:11px;color:#2B3A52;letter-spacing:0.5px}
+.legend-item .swatch{width:10px;height:10px;flex-shrink:0}
+.legend-item.off .swatch{opacity:0.25}
+.legend-item.off span{color:#B0BAC8}
 .footer-bar{padding:6px 20px;background:#D0D7E2;border-top:1px solid #C0C6D0;font-size:11px;color:#8C9DB6;display:flex;justify-content:space-between}
 @media(max-width:600px){body{padding:0;align-items:stretch}.wrap{border:none;min-height:100vh}.stats-row{flex-wrap:wrap}.stat-box{flex:1 1 50%;border-bottom:1px solid #D0D7E2}}
 </style>
@@ -59,6 +66,27 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
     <div class="chart-status show" id="chart-status">loading...</div>
     <canvas id="chart" style="display:none"></canvas>
     <div class="chart-tooltip" id="chart-tooltip"></div>
+  </div>
+  <div class="legend-bar" id="legend-bar">
+    <div id="leg-set-txs">
+      <div class="legend-item" id="leg-all" onclick="toggleLegend('all')">
+        <div class="swatch" style="background:#8C9DB6"></div><span>all transactions</span>
+      </div>
+      <div class="legend-item" id="leg-enc" onclick="toggleLegend('enc')">
+        <div class="swatch" style="background:#3B567F"></div><span>encrypted</span>
+      </div>
+      <div class="legend-item" id="leg-rej" onclick="toggleLegend('rej')">
+        <div class="swatch" style="background:#111"></div><span>rejected</span>
+      </div>
+    </div>
+    <div id="leg-set-users" style="display:none">
+      <div class="legend-item" id="leg-uniq" onclick="toggleLegend('uniq')">
+        <div class="swatch" style="background:#8C9DB6"></div><span>unique users</span>
+      </div>
+      <div class="legend-item" id="leg-new" onclick="toggleLegend('new')">
+        <div class="swatch" style="background:#3B567F"></div><span>new users</span>
+      </div>
+    </div>
   </div>
   <div class="footer-bar">
     <span>octra-data.devnet · bigquery</span>
@@ -102,6 +130,13 @@ const wrap    = document.getElementById('chart-wrap');
 let chartData   = [];
 let barRects    = [];
 let hoveredIdx  = -1;
+const vis = {all: true, enc: true, rej: true, uniq: true, new: true};
+
+function toggleLegend(key) {
+  vis[key] = !vis[key];
+  document.getElementById('leg-' + key).classList.toggle('off', !vis[key]);
+  if (chartData.length) drawChart(chartData);
+}
 
 function drawChart(data) {
   const dpr  = window.devicePixelRatio || 1;
@@ -128,7 +163,15 @@ function drawChart(data) {
     return;
   }
 
-  const maxVal = Math.max(...data.map(d => d.count), 1);
+  const maxVal = Math.max(...data.map(d => {
+    const showBase  = activeSection === 'txs' ? vis.all  : activeSection === 'users' ? vis.uniq : true;
+    const showFront = activeSection === 'txs' ? vis.enc  : activeSection === 'users' ? vis.new  : false;
+    const frontVal  = activeSection === 'users' ? (d.new_user_count || 0) : (d.encrypted_count || 0);
+    const base = showBase  ? d.count    : 0;
+    const front= showFront ? frontVal   : 0;
+    const rej  = (activeSection === 'txs' && vis.rej) ? (d.rejected_count || 0) : 0;
+    return Math.max(base, front, rej, 1);
+  }), 1);
   const rawStep = maxVal / 4;
   const mag     = Math.pow(10, Math.floor(Math.log10(rawStep)));
   const yStep   = Math.ceil(rawStep / mag) * mag || 1;
@@ -159,14 +202,21 @@ function drawChart(data) {
                    : activeSection === 'txs'      ? (d.encrypted_count  || 0)
                    : 0;
     const fbh      = frontVal > 0 ? Math.max(1, (frontVal / yMax) * cH) : 0;
+    const rejVal   = activeSection === 'txs' ? (d.rejected_count || 0) : 0;
+    const rbh      = rejVal > 0 ? Math.max(1, (rejVal / yMax) * cH) : 0;
+    const rby      = PT + cH - rbh;
 
-    ctx.fillStyle = (i === hoveredIdx) ? '#C0C6D0' : '#8C9DB6';
-    ctx.fillRect(Math.round(bx), Math.round(by), Math.round(barW), Math.round(bh));
+    const showBase  = activeSection === 'txs' ? vis.all  : activeSection === 'users' ? vis.uniq : true;
+    const showFront = activeSection === 'txs' ? vis.enc  : activeSection === 'users' ? vis.new  : true;
+    const bars = [
+      showBase                             ? {h: bh,  y: by,             base: (i === hoveredIdx) ? '#C0C6D0' : '#8C9DB6'} : null,
+      showFront                            ? {h: fbh, y: PT + cH - fbh, base: (i === hoveredIdx) ? '#516E9A' : '#3B567F'} : null,
+      (vis.rej && activeSection === 'txs') ? {h: rbh, y: rby,            base: (i === hoveredIdx) ? '#444'    : '#111'}    : null,
+    ].filter(b => b && b.h > 0).sort((a, b) => b.h - a.h);
 
-    if (fbh > 0) {
-      const fby = PT + cH - fbh;
-      ctx.fillStyle = (i === hoveredIdx) ? '#516E9A' : '#3B567F';
-      ctx.fillRect(Math.round(bx), Math.round(fby), Math.round(barW), Math.round(fbh));
+    for (const bar of bars) {
+      ctx.fillStyle = bar.base;
+      ctx.fillRect(Math.round(bx), Math.round(bar.y), Math.round(barW), Math.round(bar.h));
     }
 
     barRects.push({x: bx, w: barW + gap, idx: i});
@@ -201,12 +251,16 @@ canvas.addEventListener('mousemove', function(e) {
     const enc  = d.encrypted_count || 0;
     const evol = d.encrypted_volume || 0;
     const neu  = d.new_user_count || 0;
+    const rej  = d.rejected_count || 0;
+    const rejenc = d.rejected_encrypted_count || 0;
     const body = activeSection === 'users'
       ? 'unique users: ' + d.count.toLocaleString() + (neu > 0 ? '<br>new users: ' + neu.toLocaleString() : '')
       : activeSection === 'revenue'
       ? 'revenue: ' + d.count.toLocaleString(undefined, {maximumFractionDigits: 6}) + ' OCT<br>txs: ' + (d.tx_count || 0).toLocaleString()
-      : 'txs: ' + d.count.toLocaleString() + '<br>vol: ' + d.volume.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT'
-        + (enc > 0 ? '<br>encrypted txs: ' + enc.toLocaleString() + '<br>encrypted vol: ' + evol.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT' : '');
+      : 'all txs: ' + d.count.toLocaleString() + '<br>vol: ' + d.volume.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT'
+        + (enc > 0 ? '<br>encrypted txs: ' + enc.toLocaleString() + '<br>encrypted vol: ' + evol.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT' : '')
+        + (rej > 0 ? '<br>rejected txs: ' + rej.toLocaleString() : '')
+        + (rejenc > 0 ? '<br>rejected encrypted txs: ' + rejenc.toLocaleString() : '');
     tooltip.innerHTML = '<b>' + d.bucket + '</b><br>' + body;
     const tx = Math.min(e.clientX - wr.left + 14, wr.width - 165);
     const ty = Math.max(e.clientY - wr.top  - 14, 4);
@@ -243,6 +297,9 @@ async function setSection(sec) {
   activeSection = sec;
   document.querySelectorAll('.section-bar button').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-' + sec).classList.add('active');
+  document.getElementById('legend-bar').classList.toggle('show', sec === 'txs' || sec === 'users');
+  document.getElementById('leg-set-txs').style.display   = sec === 'txs'   ? 'flex' : 'none';
+  document.getElementById('leg-set-users').style.display = sec === 'users' ? 'flex' : 'none';
   await setTf(activeTf);
 }
 
@@ -282,6 +339,9 @@ async function loadStats() {
   }
 }
 
+document.getElementById('legend-bar').classList.add('show');
+document.getElementById('leg-set-txs').style.display   = 'flex';
+document.getElementById('leg-set-users').style.display = 'none';
 loadStats();
 setTf('DAY');
 </script>
