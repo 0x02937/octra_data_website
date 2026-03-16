@@ -45,8 +45,9 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
     <div class="stat-box"><div class="lbl">current epoch</div><div class="val" id="st-epoch">...</div></div>
   </div>
   <div class="section-bar">
-    <button id="sec-txs"   onclick="setSection('txs')"   class="active">transactions</button>
-    <button id="sec-users" onclick="setSection('users')">users</button>
+    <button id="sec-txs"     onclick="setSection('txs')"     class="active">transactions</button>
+    <button id="sec-users"   onclick="setSection('users')">users</button>
+    <button id="sec-revenue" onclick="setSection('revenue')">network revenue</button>
   </div>
   <div class="tf-bar">
     <button id="tf-MONTH" onclick="setTf('MONTH')">month</button>
@@ -80,7 +81,8 @@ async function loadPayload() {
 
 function parseRows(tf) {
   if (!cachedPayload) return [];
-  const src = activeSection === 'users' ? cachedPayload.user_charts : cachedPayload.charts;
+  const srcMap = {txs: 'charts', users: 'user_charts', revenue: 'revenue_charts'};
+  const src = cachedPayload[srcMap[activeSection]];
   if (!src) return [];
   return src[tf] || [];
 }
@@ -149,11 +151,23 @@ function drawChart(data) {
   barRects   = [];
 
   data.forEach((d, i) => {
-    const bx = PL + i * (barW + gap);
-    const bh = Math.max(d.count > 0 ? 1 : 0, (d.count / yMax) * cH);
-    const by = PT + cH - bh;
+    const bx       = PL + i * (barW + gap);
+    const bh       = Math.max(d.count > 0 ? 1 : 0, (d.count / yMax) * cH);
+    const by       = PT + cH - bh;
+    const frontVal = activeSection === 'users'    ? (d.new_user_count   || 0)
+                   : activeSection === 'txs'      ? (d.encrypted_count  || 0)
+                   : 0;
+    const fbh      = frontVal > 0 ? Math.max(1, (frontVal / yMax) * cH) : 0;
+
     ctx.fillStyle = (i === hoveredIdx) ? '#516E9A' : '#3B567F';
     ctx.fillRect(Math.round(bx), Math.round(by), Math.round(barW), Math.round(bh));
+
+    if (fbh > 0) {
+      const fby = PT + cH - fbh;
+      ctx.fillStyle = (i === hoveredIdx) ? '#444' : '#1a1a1a';
+      ctx.fillRect(Math.round(bx), Math.round(fby), Math.round(barW), Math.round(fbh));
+    }
+
     barRects.push({x: bx, w: barW + gap, idx: i});
   });
 
@@ -183,9 +197,15 @@ canvas.addEventListener('mousemove', function(e) {
   }
   if (found >= 0) {
     const d = chartData[found];
+    const enc  = d.encrypted_count || 0;
+    const evol = d.encrypted_volume || 0;
+    const neu  = d.new_user_count || 0;
     const body = activeSection === 'users'
-      ? 'users: ' + d.count.toLocaleString()
-      : 'txs: ' + d.count.toLocaleString() + '<br>vol: ' + d.volume.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT';
+      ? 'unique users: ' + d.count.toLocaleString() + (neu > 0 ? '<br>new users: ' + neu.toLocaleString() : '')
+      : activeSection === 'revenue'
+      ? 'revenue: ' + d.count.toLocaleString(undefined, {maximumFractionDigits: 6}) + ' OCT<br>txs: ' + (d.tx_count || 0).toLocaleString()
+      : 'txs: ' + d.count.toLocaleString() + '<br>vol: ' + d.volume.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT'
+        + (enc > 0 ? '<br>encrypted txs: ' + enc.toLocaleString() + '<br>encrypted vol: ' + evol.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT' : '');
     tooltip.innerHTML = '<b>' + d.bucket + '</b><br>' + body;
     const tx = Math.min(e.clientX - wr.left + 14, wr.width - 165);
     const ty = Math.max(e.clientY - wr.top  - 14, 4);
