@@ -1,4 +1,4 @@
-# Octra Chain → BigQuery + Stats Dashboard
+# Octra Chain Dashboard
 
 Indexes the Octra blockchain into Google BigQuery and publishes a pre-aggregated
 stats JSON to Google Cloud Storage.
