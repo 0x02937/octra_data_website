@@ -66,8 +66,8 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
   </div>
   <div class="tf-bar">
     <button id="tf-MONTH" onclick="setTf('MONTH')">month</button>
-    <button id="tf-WEEK"  onclick="setTf('WEEK')">week</button>
-    <button id="tf-DAY"   onclick="setTf('DAY')" class="active">day</button>
+    <button id="tf-WEEK"  onclick="setTf('WEEK')" class="active">week</button>
+    <button id="tf-DAY"   onclick="setTf('DAY')">day</button>
   </div>
   <div class="chart-wrap" id="chart-wrap">
     <div class="chart-status show" id="chart-status">loading...</div>
@@ -125,7 +125,7 @@ function switchNetwork() {
 
 let cachedPayload  = null;
 let activeSection  = 'txs';
-let activeTf       = 'DAY';
+let activeTf       = 'WEEK';
 
 async function loadPayload() {
   if (cachedPayload) return cachedPayload;
@@ -425,7 +425,7 @@ document.getElementById('legend-bar').classList.add('show');
 document.getElementById('leg-set-txs').style.display   = 'flex';
 document.getElementById('leg-set-users').style.display = 'none';
 loadStats();
-setTf('DAY');
+setTf('WEEK');
 </script>
 </body>
 </html>
