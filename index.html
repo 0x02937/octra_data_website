@@ -3,14 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>octra stats | devnet</title>
+<title>octra stats | mainnet</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:40px 16px;font-size:12px;letter-spacing:0.5px}
 .wrap{width:100%;max-width:860px;background:#fff;border:1px solid #D0D7E2;overflow:hidden}
 .hdr{padding:14px 20px;border-bottom:1px solid #E5E9EF;display:flex;align-items:center;justify-content:space-between}
 .hdr h1{font-size:14px;font-weight:600;color:#2B3A52}
-.hdr .net-badge{font-size:11px;color:#8C9DB6;font-family:monospace}
+.net-switch{font-size:11px;color:#8C9DB6;font-family:monospace;background:none;border:0px solid #D0D7E2;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;display:flex;align-items:center;gap:6px}
+.net-switch:hover{border-color:#8C9DB6;color:#3B567F}
+.net-switch .net-dot{width:6px;height:6px;border-radius:50%;background:#8C9DB6;flex-shrink:0}
+.net-switch[data-net="mainnet"] .net-dot{background:#4CAF7D}
+.net-switch[data-net="devnet"] .net-dot{background:#E09B3D}
 .stats-row{display:flex;border-bottom:1px solid #D0D7E2}
 .stat-box{flex:1;background:#E5E9EF;border-right:1px solid #D0D7E2;padding:8px 14px}
 .stat-box:last-child{border-right:none}
@@ -44,7 +48,9 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
 <div class="wrap">
   <div class="hdr">
     <h1>octra stats</h1>
-    <span class="net-badge">devnet</span>
+    <button class="net-switch" id="net-switch" data-net="mainnet" onclick="switchNetwork()">
+      <span class="net-dot"></span><span id="net-label">current network: mainnet</span>
+    </button>
   </div>
   <div class="stats-row">
     <div class="stat-box"><div class="lbl">total transactions</div><div class="val" id="st-txs">...</div></div>
@@ -90,12 +96,32 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
     </div>
   </div>
   <div class="footer-bar">
-    <span>octra-data.devnet · bigquery</span>
+    <span id="footer-net">octra-data.mainnet · bigquery</span>
     <span id="last-updated"></span>
   </div>
 </div>
 <script>
-const STATS_URL = 'https://storage.googleapis.com/octra-data/devnet/stats.json';
+let activeNetwork = 'mainnet';
+const STATS_URLS = {
+  mainnet: 'https://storage.googleapis.com/octra-data/mainnet/stats.json',
+  devnet:  'https://storage.googleapis.com/octra-data/devnet/stats.json'
+};
+
+function switchNetwork() {
+  activeNetwork = activeNetwork === 'mainnet' ? 'devnet' : 'mainnet';
+  const btn = document.getElementById('net-switch');
+  btn.setAttribute('data-net', activeNetwork);
+  document.getElementById('net-label').textContent = 'current network: ' + activeNetwork;
+  document.getElementById('footer-net').textContent = 'octra-data.' + activeNetwork + ' · bigquery';
+  document.title = 'octra stats | ' + activeNetwork;
+  cachedPayload = null;
+  ['st-txs','st-accounts','st-supply','st-epoch','st-revenue'].forEach(function(id) {
+    document.getElementById(id).textContent = '...';
+  });
+  document.getElementById('last-updated').textContent = '';
+  loadStats();
+  setTf(activeTf);
+}
 
 let cachedPayload  = null;
 let activeSection  = 'txs';
@@ -103,7 +129,7 @@ let activeTf       = 'DAY';
 
 async function loadPayload() {
   if (cachedPayload) return cachedPayload;
-  const res = await fetch(STATS_URL);
+  const res = await fetch(STATS_URLS[activeNetwork]);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   cachedPayload = await res.json();
   return cachedPayload;
@@ -189,30 +215,56 @@ function drawChart(data) {
     return;
   }
 
-  const maxVal = Math.max(...data.map(d => {
+  const allVals = data.map(d => {
     const showBase  = activeSection === 'txs' ? vis.all  : activeSection === 'users' ? vis.uniq : true;
     const showFront = activeSection === 'txs' ? vis.enc  : activeSection === 'users' ? vis.new  : false;
     const frontVal  = activeSection === 'users' ? (d.new_user_count || 0) : (d.encrypted_count || 0);
-    const base = showBase  ? d.count    : 0;
-    const front= showFront ? frontVal   : 0;
-    const rej  = (activeSection === 'txs' && vis.rej) ? (d.rejected_count || 0) : 0;
+    const base  = showBase  ? d.count    : 0;
+    const front = showFront ? frontVal   : 0;
+    const rej   = (activeSection === 'txs' && vis.rej) ? (d.rejected_count || 0) : 0;
     return Math.max(base, front, rej, 1);
-  }), 1);
-  const rawStep = maxVal / 4;
-  const mag     = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  const yStep   = Math.ceil(rawStep / mag) * mag || 1;
-  const yMax    = yStep * 4;
+  });
+  const maxVal  = Math.max(...allVals, 1);
+  let scaleVal  = maxVal;
+  if (activeSection === 'revenue') {
+    const sorted = data.map(d => d.count).filter(v => v > 0).sort((a, b) => a - b);
+    if (sorted.length > 0)
+      scaleVal = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
+  }
+  const rawStep   = scaleVal / 4;
+  const mag       = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+  const yStep     = Math.ceil(rawStep / mag) * mag || 1;
+  const yMax      = yStep * 4;
+  const logRef = Math.log10(maxVal + 1);
+
+  let T, gridVals;
+  if (activeSection === 'users' || activeSection === 'txs') {
+    T = v => maxVal > 0 ? Math.sqrt(Math.max(0, v) / maxVal) : 0;
+    gridVals = [0];
+    for (let k = 1; k <= 4; k++) {
+      if (k === 4) { gridVals.push(maxVal); continue; }
+      const rawV = maxVal * (k / 4) * (k / 4);
+      const m = Math.pow(10, Math.floor(Math.log10(rawV || 1)));
+      gridVals.push(Math.round(rawV / m) * m);
+    }
+  } else {
+    T = v => logRef > 0 ? Math.log10(Math.max(0, v) + 1) / logRef : 0;
+    const LOG_GRIDS = {
+      revenue: [0, 10, 100, 100000, maxVal],
+    };
+    gridVals = (LOG_GRIDS[activeSection] || []).filter(v => v <= maxVal);
+  }
 
   ctx.strokeStyle = '#E5E9EF';
   ctx.lineWidth = 1;
   ctx.fillStyle = '#8C9DB6';
   ctx.font = '10px Tahoma,arial,sans-serif';
   ctx.textAlign = 'right';
-  for (let i = 0; i <= 4; i++) {
-    const v = yStep * i;
-    const y = PT + cH - (v / yMax) * cH;
+
+  for (const v of gridVals) {
+    const y = PT + cH - T(v) * cH;
     ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(PL + cW, y); ctx.stroke();
-    ctx.fillText(fmtNum(v), PL - 6, y + 3);
+    ctx.fillText(v === 0 ? '0' : fmtNum(v), PL - 6, y + 3);
   }
 
   const n    = data.length;
@@ -221,16 +273,16 @@ function drawChart(data) {
   barRects   = [];
 
   data.forEach((d, i) => {
-    const bx       = PL + i * (barW + gap);
-    const bh       = Math.max(d.count > 0 ? 1 : 0, (d.count / yMax) * cH);
-    const by       = PT + cH - bh;
-    const frontVal = activeSection === 'users'    ? (d.new_user_count   || 0)
-                   : activeSection === 'txs'      ? (d.encrypted_count  || 0)
-                   : 0;
-    const fbh      = frontVal > 0 ? Math.max(1, (frontVal / yMax) * cH) : 0;
-    const rejVal   = activeSection === 'txs' ? (d.rejected_count || 0) : 0;
-    const rbh      = rejVal > 0 ? Math.max(1, (rejVal / yMax) * cH) : 0;
-    const rby      = PT + cH - rbh;
+    const bx        = PL + i * (barW + gap);
+    const bh        = Math.max(d.count > 0 ? 1 : 0, T(d.count) * cH);
+    const by        = PT + cH - bh;
+    const frontVal  = activeSection === 'users'    ? (d.new_user_count   || 0)
+                    : activeSection === 'txs'      ? (d.encrypted_count  || 0)
+                    : 0;
+    const fbh       = frontVal > 0 ? Math.max(1, T(frontVal) * cH) : 0;
+    const rejVal    = activeSection === 'txs' ? (d.rejected_count || 0) : 0;
+    const rbh       = rejVal > 0 ? Math.max(1, T(rejVal) * cH) : 0;
+    const rby       = PT + cH - rbh;
 
     const showBase  = activeSection === 'txs' ? vis.all  : activeSection === 'users' ? vis.uniq : true;
     const showFront = activeSection === 'txs' ? vis.enc  : activeSection === 'users' ? vis.new  : true;
@@ -251,11 +303,14 @@ function drawChart(data) {
   ctx.fillStyle = '#8C9DB6';
   ctx.font = '10px Tahoma,arial,sans-serif';
   ctx.textAlign = 'center';
+  let lastLabelX = -999;
   data.forEach((d, i) => {
     const m = d.bucket.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     const isWeekStart = !m || new Date(+m[1], +m[2] - 1, +m[3]).getDay() === 0;
     if (!isWeekStart) return;
     const cx = PL + i * (barW + gap) + barW / 2;
+    if (cx - lastLabelX < 65) return;
+    lastLabelX = cx;
     ctx.fillText(d.bucket, cx, H - PB + 14);
   });
 }
@@ -282,9 +337,9 @@ canvas.addEventListener('mousemove', function(e) {
     const body = activeSection === 'users'
       ? 'unique accounts: ' + d.count.toLocaleString() + (neu > 0 ? '<br>new accounts: ' + neu.toLocaleString() : '')
       : activeSection === 'revenue'
-      ? 'revenue: ' + d.count.toLocaleString(undefined, {maximumFractionDigits: 6}) + ' OCT<br>txs: ' + (d.tx_count || 0).toLocaleString()
-      : 'all txs: ' + d.count.toLocaleString() + '<br>vol: ' + d.volume.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT'
-        + (enc > 0 ? '<br>encrypted txs: ' + enc.toLocaleString() + '<br>encrypted vol: ' + evol.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT' : '')
+      ? 'revenue: ' + d.count.toLocaleString(undefined, {maximumFractionDigits: 3}) + ' OCT<br>txs: ' + (d.tx_count || 0).toLocaleString()
+      : 'all txs: ' + d.count.toLocaleString() + '<br>vol: ' + d.volume.toLocaleString(undefined, {maximumFractionDigits: 3}) + ' OCT'
+        + (enc > 0 ? '<br>encrypted txs: ' + enc.toLocaleString() + '<br>encrypted vol: ' + evol.toLocaleString(undefined, {maximumFractionDigits: 3}) + ' OCT' : '')
         + (rej > 0 ? '<br>rejected txs: ' + rej.toLocaleString() : '')
         + (rejenc > 0 ? '<br>rejected encrypted txs: ' + rejenc.toLocaleString() : '');
     tooltip.innerHTML = '<b>' + d.bucket + '</b><br>' + body;
