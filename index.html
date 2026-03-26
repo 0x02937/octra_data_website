@@ -39,6 +39,10 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
 .legend-item .swatch{width:10px;height:10px;flex-shrink:0}
 .legend-item.off .swatch{opacity:0.25}
 .legend-item.off span{color:#B0BAC8}
+.legend-item.legend-val{cursor:default;align-items:center}
+.legend-item.legend-val .val-line{font-size:11px;letter-spacing:0.5px;line-height:13px}
+.legend-item.legend-val .val-prefix{color:#2B3A52;user-select:none}
+.legend-item.legend-val .val-addr{font-size:11px;line-height:13px;color:#3B567F;word-break:break-all;user-select:text;cursor:text;-webkit-user-select:text}
 .leg-num{color:#8C9DB6;font-family:monospace;margin-left:5px;font-size:11px;position:relative;top:1px}
 .footer-bar{padding:6px 20px;background:#D0D7E2;border-top:1px solid #C0C6D0;font-size:11px;color:#8C9DB6;display:flex;justify-content:space-between}
 @media(max-width:600px){body{padding:0;align-items:stretch}.wrap{border:none;min-height:100vh}.stats-row{flex-wrap:wrap}.stat-box{flex:1 1 50%;border-bottom:1px solid #D0D7E2}}
@@ -94,6 +98,12 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
         <div class="swatch" style="background:#3B567F"></div><span>new accounts</span><span class="leg-num" id="leg-num-new"></span>
       </div>
     </div>
+    <div id="leg-set-revenue" style="display:none">
+      <div class="legend-item legend-val" id="leg-val-item">
+        <div class="swatch" id="leg-val-swatch" style="background:#8C9DB6;flex-shrink:0"></div>
+        <span class="val-line"><span class="val-prefix" id="leg-val-prefix">validators: …</span><span class="val-addr" id="leg-val-addr"></span></span>
+      </div>
+    </div>
   </div>
   <div class="footer-bar">
     <span id="footer-net">octra-data.mainnet · bigquery</span>
@@ -115,6 +125,8 @@ function switchNetwork() {
   document.getElementById('footer-net').textContent = 'octra-data.' + activeNetwork + ' · bigquery';
   document.title = 'octra stats | ' + activeNetwork;
   cachedPayload = null;
+  document.getElementById('leg-val-prefix').textContent = 'validators: …';
+  document.getElementById('leg-val-addr').textContent = '';
   ['st-txs','st-accounts','st-supply','st-epoch','st-revenue'].forEach(function(id) {
     document.getElementById(id).textContent = '...';
   });
@@ -374,13 +386,33 @@ function showCanvas() {
   canvas.style.display = 'block';
 }
 
+function renderValidatorLine() {
+  const vals = cachedPayload && cachedPayload.validators;
+  const sw = document.getElementById('leg-val-swatch');
+  const pre = document.getElementById('leg-val-prefix');
+  const adr = document.getElementById('leg-val-addr');
+  if (!vals) return;
+  const n = vals.length;
+  if (n === 0) {
+    sw.style.background = '#C0C6D0';
+    pre.textContent = 'validators: none';
+    adr.textContent = '';
+    return;
+  }
+  sw.style.background = '#8C9DB6';
+  pre.textContent = n === 1 ? 'validators: 1 · ' : 'validators: ' + n + ' · ';
+  adr.textContent = n === 1 ? vals[0] : vals.join(', ');
+}
+
 async function setSection(sec) {
   activeSection = sec;
   document.querySelectorAll('.section-bar button').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-' + sec).classList.add('active');
-  document.getElementById('legend-bar').classList.toggle('show', sec === 'txs' || sec === 'users');
-  document.getElementById('leg-set-txs').style.display   = sec === 'txs'   ? 'flex' : 'none';
-  document.getElementById('leg-set-users').style.display = sec === 'users' ? 'flex' : 'none';
+  document.getElementById('legend-bar').classList.toggle('show', sec !== 'revenue' ? (sec === 'txs' || sec === 'users') : true);
+  document.getElementById('leg-set-txs').style.display     = sec === 'txs'     ? 'flex' : 'none';
+  document.getElementById('leg-set-users').style.display   = sec === 'users'   ? 'flex' : 'none';
+  document.getElementById('leg-set-revenue').style.display = sec === 'revenue' ? 'flex' : 'none';
+  if (sec === 'revenue') renderValidatorLine();
   await setTf(activeTf);
 }
 
