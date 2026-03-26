@@ -8,7 +8,7 @@ stats JSON to Google Cloud Storage.
 | Resource | Name |
 |---|---|
 | Project | `octra-data` |
-| BigQuery dataset | `devnet` or 'mainnet' |
+| BigQuery dataset | `devnet` or `mainnet` |
 | GCS bucket | `octra-data` (public read) |
 | Stats JSON | `gs://octra-data/devnet_or_mainnet/stats.json` |
 | Public URL | `https://storage.googleapis.com/octra-data/devnet_or_mainnet/stats.json` |
