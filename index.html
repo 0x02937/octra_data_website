@@ -10,11 +10,8 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
 .wrap{width:100%;max-width:860px;background:#fff;border:1px solid #D0D7E2;overflow:hidden}
 .hdr{padding:14px 20px;border-bottom:1px solid #E5E9EF;display:flex;align-items:center;justify-content:space-between}
 .hdr h1{font-size:14px;font-weight:600;color:#2B3A52}
-.net-switch{font-size:11px;color:#8C9DB6;font-family:monospace;background:none;border:0px solid #D0D7E2;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;display:flex;align-items:center;gap:6px}
+.net-switch{font-size:11px;color:#8C9DB6;font-family:monospace;background:none;border:0px solid #D0D7E2;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;display:flex;align-items:center}
 .net-switch:hover{border-color:#8C9DB6;color:#3B567F}
-.net-switch .net-dot{width:6px;height:6px;border-radius:50%;background:#8C9DB6;flex-shrink:0}
-.net-switch[data-net="mainnet"] .net-dot{background:#4CAF7D}
-.net-switch[data-net="devnet"] .net-dot{background:#E09B3D}
 .stats-row{display:flex;border-bottom:1px solid #D0D7E2}
 .stat-box{flex:1;background:#E5E9EF;border-right:1px solid #D0D7E2;padding:8px 14px}
 .stat-box:last-child{border-right:none}
@@ -53,7 +50,7 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
   <div class="hdr">
     <h1>octra stats</h1>
     <button class="net-switch" id="net-switch" data-net="mainnet" onclick="switchNetwork()">
-      <span class="net-dot"></span><span id="net-label">current network: mainnet</span>
+      <span id="net-label">current network: mainnet</span>
     </button>
   </div>
   <div class="stats-row">
