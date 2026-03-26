@@ -424,6 +424,7 @@ async function setTf(tf) {
     showCanvas();
     drawChart(chartData);
     updateLegendCounts(chartData);
+    if (activeSection === 'revenue') renderValidatorLine();
     const gen = cachedPayload.generated_at ? new Date(cachedPayload.generated_at).toLocaleTimeString() : '';
     document.getElementById('last-updated').textContent = gen ? 'generated ' + gen : '';
   } catch (e) {
