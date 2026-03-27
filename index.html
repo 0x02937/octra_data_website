@@ -5,30 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>octra stats | mainnet</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:40px 16px;font-size:12px;letter-spacing:0.5px}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Tahoma,Arial,sans-serif}
+body{background:#F0F2F5;color:#2B3A52;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:40px 16px;font-size:12px;letter-spacing:0.5px}
 .wrap{width:100%;max-width:860px;background:#fff;border:1px solid #D0D7E2;overflow:hidden}
 .hdr{padding:14px 20px;border-bottom:1px solid #E5E9EF;display:flex;align-items:center;justify-content:space-between}
 .hdr h1{font-size:14px;font-weight:600;color:#2B3A52}
-.net-switch{font-size:11px;color:#8C9DB6;font-family:monospace;background:none;border:0px solid #D0D7E2;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;display:flex;align-items:center}
+.net-switch{font-size:11px;color:#8C9DB6;background:none;border:0px solid #D0D7E2;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;display:flex;align-items:center}
 .net-switch:hover{border-color:#8C9DB6;color:#3B567F}
 .stats-row{display:flex;border-bottom:1px solid #D0D7E2}
-.stat-box{flex:1;background:#E5E9EF;border-right:1px solid #D0D7E2;padding:8px 10px}
+.stat-box{flex:1;background:#E5E9EF;border-right:1px solid #D0D7E2;padding:8px 8px}
 .stat-box:last-child{border-right:none}
 .stat-box .lbl{font-size:11px;color:#8C9DB6;text-transform:lowercase;letter-spacing:0.5px}
-.stat-box .val{font-size:13px;font-weight:bold;color:#3B567F;margin-top:2px;font-family:monospace}
-.section-bar{display:flex;background:#D0D7E2;border-top:1px solid #C0C6D0;border-bottom:1px solid #C0C6D0}
-.section-bar button{flex:1;padding:8px 20px;font-size:11px;font-weight:bold;border:none;background:transparent;cursor:pointer;color:#8C9DB6;letter-spacing:0.5px;text-transform:lowercase;font-family:Tahoma,arial,sans-serif;text-align:center}
+.stat-box .val{font-size:11px;font-weight:600;color:#3B567F;margin-top:2px}
+.section-bar{display:flex;background:#D0D7E2;border-top:0px solid #C0C6D0;border-bottom:0px solid #C0C6D0}
+.section-bar button{flex:1;padding:8px 20px;font-size:11px;font-weight:bold;border:none;border-right:1px solid #C0C6D0;background:transparent;cursor:pointer;color:#8C9DB6;letter-spacing:0.5px;text-transform:lowercase;text-align:center}
+.section-bar button:last-child{border-right:none}
 .section-bar button.active{color:#3B567F;background:#C0C6D0}
 .section-bar button:hover:not(.active){color:#3B567F}
 .tf-bar{display:flex;border-bottom:1px solid #E5E9EF;background:#F7F8FA}
-.tf-bar button{flex:1;padding:4px 0;font-size:11px;font-weight:500;border:none;background:transparent;cursor:pointer;color:#8C9DB6;border-bottom:2px solid transparent;transition:all 0.12s;font-family:Tahoma,arial,sans-serif;letter-spacing:0.5px}
+.tf-bar button{flex:1;padding:4px 0;font-size:11px;font-weight:500;border:none;background:transparent;cursor:pointer;color:#8C9DB6;border-bottom:2px solid transparent;transition:all 0.12s;letter-spacing:0.5px}
 .tf-bar button.active{color:#3B567F;border-bottom-color:#3B567F;background:#fff}
 .tf-bar button:hover:not(.active){background:#E5E9EF;color:#3B567F}
 .chart-wrap{position:relative;padding:16px 20px 12px;min-height:240px}
 .chart-status{padding:40px 20px;text-align:center;font-size:12px;color:#8C9DB6;display:none}
 .chart-status.show{display:block}
-.chart-tooltip{position:absolute;background:#2B3A52;color:#fff;font-size:11px;padding:6px 10px;pointer-events:none;display:none;font-family:Tahoma,arial,sans-serif;letter-spacing:0.3px;line-height:1.6;white-space:nowrap;z-index:10}
+.chart-tooltip{position:absolute;background:#2B3A52;color:#fff;font-size:11px;padding:6px 10px;pointer-events:none;display:none;letter-spacing:0.3px;line-height:1.6;white-space:nowrap;z-index:10}
 .legend-bar{display:none;padding:6px 20px 10px;background:#fff;border-top:1px solid #E5E9EF}
 .legend-bar>div{display:flex;gap:16px}
 .legend-bar.show{display:flex}
@@ -40,7 +41,7 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
 .legend-item.legend-val .val-line{font-size:11px;letter-spacing:0.5px;line-height:13px}
 .legend-item.legend-val .val-prefix{color:#2B3A52;user-select:none}
 .legend-item.legend-val .val-addr{font-size:11px;line-height:13px;color:#3B567F;word-break:break-all;user-select:text;cursor:text;-webkit-user-select:text}
-.leg-num{color:#8C9DB6;font-family:monospace;margin-left:5px;font-size:11px;position:relative;top:1px}
+.leg-num{color:#8C9DB6;margin-left:5px;font-size:11px;position:relative;top:1px}
 .footer-bar{padding:6px 20px;background:#D0D7E2;border-top:1px solid #C0C6D0;font-size:11px;color:#8C9DB6;display:flex;justify-content:space-between}
 @media(max-width:600px){body{padding:0;align-items:stretch}.wrap{border:none;min-height:100vh}.stats-row{flex-wrap:wrap}.stat-box{flex:1 1 50%;border-bottom:1px solid #D0D7E2}}
 </style>
@@ -54,12 +55,12 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
     </button>
   </div>
   <div class="stats-row">
-    <div class="stat-box"><div class="lbl">total transactions</div><div class="val" id="st-txs">...</div></div>
-    <div class="stat-box"><div class="lbl">total volume</div><div class="val" id="st-volume">...</div></div>
-    <div class="stat-box"><div class="lbl">total accounts</div><div class="val" id="st-accounts">...</div></div>
-    <div class="stat-box"><div class="lbl">circulating supply</div><div class="val" id="st-supply">...</div></div>
     <div class="stat-box"><div class="lbl">current epoch</div><div class="val" id="st-epoch">...</div></div>
-    <div class="stat-box"><div class="lbl">total revenue</div><div class="val" id="st-revenue">...</div></div>
+    <div class="stat-box"><div class="lbl">total transactions</div><div class="val" id="st-txs">...</div></div>
+    <div class="stat-box"><div class="lbl">total accounts</div><div class="val" id="st-accounts">...</div></div>
+    <div class="stat-box"><div class="lbl">total volume (oct)</div><div class="val" id="st-volume">...</div></div>
+    <div class="stat-box"><div class="lbl">circulating supply (oct)</div><div class="val" id="st-supply">...</div></div>
+    <div class="stat-box"><div class="lbl">total revenue (oct)</div><div class="val" id="st-revenue">...</div></div>
   </div>
   <div class="section-bar">
     <button id="sec-txs"     onclick="setSection('txs')"     class="active">transactions</button>
@@ -125,7 +126,7 @@ function switchNetwork() {
   cachedPayload = null;
   document.getElementById('leg-val-prefix').textContent = 'validators: …';
   document.getElementById('leg-val-addr').textContent = '';
-  ['st-txs','st-volume','st-accounts','st-supply','st-epoch','st-revenue'].forEach(function(id) {
+  ['st-epoch','st-txs','st-accounts','st-volume','st-supply','st-revenue'].forEach(function(id) {
     document.getElementById(id).textContent = '...';
   });
   document.getElementById('last-updated').textContent = '';
@@ -218,7 +219,7 @@ function drawChart(data) {
 
   if (!data.length) {
     ctx.fillStyle = '#8C9DB6';
-    ctx.font = '11px Tahoma,arial,sans-serif';
+    ctx.font = '11px Tahoma, Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('no data for this timeframe', W / 2, H / 2);
     barRects = [];
@@ -268,7 +269,7 @@ function drawChart(data) {
   ctx.strokeStyle = '#E5E9EF';
   ctx.lineWidth = 1;
   ctx.fillStyle = '#8C9DB6';
-  ctx.font = '10px Tahoma,arial,sans-serif';
+  ctx.font = '10px Tahoma, Arial, sans-serif';
   ctx.textAlign = 'right';
 
   for (const v of gridVals) {
@@ -311,7 +312,7 @@ function drawChart(data) {
   });
 
   ctx.fillStyle = '#8C9DB6';
-  ctx.font = '10px Tahoma,arial,sans-serif';
+  ctx.font = '10px Tahoma, Arial, sans-serif';
   ctx.textAlign = 'center';
   let lastLabelX = -999;
   data.forEach((d, i) => {
@@ -438,16 +439,16 @@ async function loadStats() {
   try {
     const p = await loadPayload();
     const s = p.stats || {};
-    document.getElementById('st-txs').textContent      = (s.total_transactions || 0).toLocaleString();
-    document.getElementById('st-volume').textContent   = (s.total_volume       || 0).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT';
-    document.getElementById('st-accounts').textContent = (s.total_accounts     || 0).toLocaleString();
-    document.getElementById('st-supply').textContent   = (s.supply             || 0).toLocaleString() + ' OCT';
     document.getElementById('st-epoch').textContent    = (s.epoch_id           || 0).toLocaleString();
+    document.getElementById('st-txs').textContent      = (s.total_transactions || 0).toLocaleString();
+    document.getElementById('st-accounts').textContent = (s.total_accounts     || 0).toLocaleString();
+    document.getElementById('st-volume').textContent   = (s.total_volume       || 0).toLocaleString(undefined, {maximumFractionDigits: 2});
+    document.getElementById('st-supply').textContent   = (s.supply             || 0).toLocaleString();
     const revCharts = p.revenue_charts && p.revenue_charts.DAY;
     const totalRev  = revCharts ? revCharts.reduce((a, d) => a + d.count, 0) : 0;
-    document.getElementById('st-revenue').textContent  = totalRev.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT';
+    document.getElementById('st-revenue').textContent  = totalRev.toLocaleString(undefined, {maximumFractionDigits: 2});
   } catch (_) {
-    ['st-txs', 'st-volume', 'st-accounts', 'st-supply', 'st-epoch', 'st-revenue'].forEach(function(id) {
+    ['st-epoch', 'st-txs', 'st-accounts', 'st-volume', 'st-supply', 'st-revenue'].forEach(function(id) {
       document.getElementById(id).textContent = '\u2014';
     });
   }
