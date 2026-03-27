@@ -13,7 +13,7 @@ body{background:#F0F2F5;color:#2B3A52;min-height:100vh;display:flex;justify-cont
 .net-switch{font-size:11px;color:#8C9DB6;background:none;border:0px solid #D0D7E2;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;display:flex;align-items:center}
 .net-switch:hover{border-color:#8C9DB6;color:#3B567F}
 .stats-row{display:flex;border-bottom:1px solid #D0D7E2}
-.stat-box{flex:1;background:#E5E9EF;border-right:1px solid #D0D7E2;padding:8px 8px}
+.stat-box{flex:1;background:#E5E9EF;border-right:1px solid #D0D7E2;padding:8px 14px}
 .stat-box:last-child{border-right:none}
 .stat-box .lbl{font-size:11px;color:#8C9DB6;text-transform:lowercase;letter-spacing:0.5px}
 .stat-box .val{font-size:11px;font-weight:600;color:#3B567F;margin-top:2px}
@@ -26,7 +26,7 @@ body{background:#F0F2F5;color:#2B3A52;min-height:100vh;display:flex;justify-cont
 .tf-bar button{flex:1;padding:4px 0;font-size:11px;font-weight:500;border:none;background:transparent;cursor:pointer;color:#8C9DB6;border-bottom:2px solid transparent;transition:all 0.12s;letter-spacing:0.5px}
 .tf-bar button.active{color:#3B567F;border-bottom-color:#3B567F;background:#fff}
 .tf-bar button:hover:not(.active){background:#E5E9EF;color:#3B567F}
-.chart-wrap{position:relative;padding:16px 20px 12px;min-height:240px}
+.chart-wrap{position:relative;padding:10px 20px 16px;min-height:240px}
 .chart-status{padding:40px 20px;text-align:center;font-size:12px;color:#8C9DB6;display:none}
 .chart-status.show{display:block}
 .chart-tooltip{position:absolute;background:#2B3A52;color:#fff;font-size:11px;padding:6px 10px;pointer-events:none;display:none;letter-spacing:0.3px;line-height:1.6;white-space:nowrap;z-index:10}
@@ -59,7 +59,7 @@ body{background:#F0F2F5;color:#2B3A52;min-height:100vh;display:flex;justify-cont
     <div class="stat-box"><div class="lbl">total transactions</div><div class="val" id="st-txs">...</div></div>
     <div class="stat-box"><div class="lbl">total accounts</div><div class="val" id="st-accounts">...</div></div>
     <div class="stat-box"><div class="lbl">total volume (oct)</div><div class="val" id="st-volume">...</div></div>
-    <div class="stat-box"><div class="lbl">circulating supply (oct)</div><div class="val" id="st-supply">...</div></div>
+    <div class="stat-box"><div class="lbl">current supply (oct)</div><div class="val" id="st-supply">...</div></div>
     <div class="stat-box"><div class="lbl">total revenue (oct)</div><div class="val" id="st-revenue">...</div></div>
   </div>
   <div class="section-bar">
@@ -211,7 +211,7 @@ function drawChart(data) {
   canvas.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const PL = 54, PR = 12, PT = 14, PB = 42;
+  const PL = 54, PR = 12, PT = 28, PB = 28;
   const cW = W - PL - PR;
   const cH = H - PT - PB;
 
