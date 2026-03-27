@@ -55,6 +55,7 @@ body{font-family:Tahoma,arial,sans-serif;background:#F0F2F5;color:#2B3A52;min-he
   </div>
   <div class="stats-row">
     <div class="stat-box"><div class="lbl">total transactions</div><div class="val" id="st-txs">...</div></div>
+    <div class="stat-box"><div class="lbl">total volume</div><div class="val" id="st-volume">...</div></div>
     <div class="stat-box"><div class="lbl">total accounts</div><div class="val" id="st-accounts">...</div></div>
     <div class="stat-box"><div class="lbl">circulating supply</div><div class="val" id="st-supply">...</div></div>
     <div class="stat-box"><div class="lbl">current epoch</div><div class="val" id="st-epoch">...</div></div>
@@ -124,7 +125,7 @@ function switchNetwork() {
   cachedPayload = null;
   document.getElementById('leg-val-prefix').textContent = 'validators: …';
   document.getElementById('leg-val-addr').textContent = '';
-  ['st-txs','st-accounts','st-supply','st-epoch','st-revenue'].forEach(function(id) {
+  ['st-txs','st-volume','st-accounts','st-supply','st-epoch','st-revenue'].forEach(function(id) {
     document.getElementById(id).textContent = '...';
   });
   document.getElementById('last-updated').textContent = '';
@@ -438,6 +439,7 @@ async function loadStats() {
     const p = await loadPayload();
     const s = p.stats || {};
     document.getElementById('st-txs').textContent      = (s.total_transactions || 0).toLocaleString();
+    document.getElementById('st-volume').textContent   = (s.total_volume       || 0).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT';
     document.getElementById('st-accounts').textContent = (s.total_accounts     || 0).toLocaleString();
     document.getElementById('st-supply').textContent   = (s.supply             || 0).toLocaleString() + ' OCT';
     document.getElementById('st-epoch').textContent    = (s.epoch_id           || 0).toLocaleString();
@@ -445,7 +447,7 @@ async function loadStats() {
     const totalRev  = revCharts ? revCharts.reduce((a, d) => a + d.count, 0) : 0;
     document.getElementById('st-revenue').textContent  = totalRev.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' OCT';
   } catch (_) {
-    ['st-txs', 'st-accounts', 'st-supply', 'st-epoch', 'st-revenue'].forEach(function(id) {
+    ['st-txs', 'st-volume', 'st-accounts', 'st-supply', 'st-epoch', 'st-revenue'].forEach(function(id) {
       document.getElementById(id).textContent = '\u2014';
     });
   }
